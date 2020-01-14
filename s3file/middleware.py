@@ -15,9 +15,14 @@ class S3FileMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        file_fields = json.loads(request.POST.get('s3file', '[]'))
+        file_fields = request.POST.get('s3file', '[]')
+        if type(file_fields) is not type([]):
+            file_fields = [file_fields]
+
         for field_name in file_fields:
-            paths = json.loads(request.POST.get(field_name, '[]'))
+            paths = request.POST.get(field_name, '[]')
+            if type(paths) is not type([]):
+                paths = [paths]
             request.FILES.setlist(field_name, list(self.get_files_from_storage(paths)))
 
         if local_dev and request.path == '/__s3_mock__/':
@@ -30,7 +35,7 @@ class S3FileMiddleware:
         """Return S3 file where the name does not include the path."""
         for path in paths:
             if storage.location:
-                path = path.replace(os.path.dirname(storage.location) + '/', '', 1)
+                path = path.replace(storage.location + '/', '', 1)
             try:
                 f = storage.open(path)
                 f.name = os.path.basename(path)
